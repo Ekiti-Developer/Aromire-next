@@ -99,25 +99,6 @@ export default function Carousel({
         )}
 
         {count > 1 && (
-          <button
-            className="carousel-btn carousel-prev"
-            aria-label="Previous event"
-            onClick={() => setCurrent((current - 1 + count) % count)}
-          >
-            &#8592;
-          </button>
-        )}
-        {count > 1 && (
-          <button
-            className="carousel-btn carousel-next"
-            aria-label="Next event"
-            onClick={() => setCurrent((current + 1) % count)}
-          >
-            &#8594;
-          </button>
-        )}
-
-        {count > 1 && (
           <div className="carousel-dots" aria-label="Choose an event">
             {events.map((event, index) => (
               <button
