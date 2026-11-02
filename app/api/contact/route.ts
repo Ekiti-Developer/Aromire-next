@@ -74,8 +74,14 @@ export async function POST(request: Request) {
   const senderEmail = process.env.BREVO_SENDER_EMAIL;
   const recipientEmail = process.env.BREVO_RECIPIENT_EMAIL;
   const senderName = process.env.BREVO_SENDER_NAME || "Aromire-Eko";
+  const contactListId = Number(process.env.BREVO_CONTACT_LIST_ID);
 
-  if (!apiKey || !senderEmail || !recipientEmail) {
+  if (
+    !apiKey ||
+    !senderEmail ||
+    !recipientEmail ||
+    (consent && (!Number.isSafeInteger(contactListId) || contactListId <= 0))
+  ) {
     return NextResponse.json(
       { error: "Contact delivery is not configured yet. Please try again later." },
       { status: 503 },
@@ -113,6 +119,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           email,
           attributes: contactAttributes,
+          listIds: [contactListId],
           emailBlacklisted: false,
           smsBlacklisted: false,
           updateEnabled: true,
@@ -154,6 +161,7 @@ export async function POST(request: Request) {
             body: JSON.stringify({
               email,
               attributes: contactAttributes,
+              listIds: [contactListId],
               emailBlacklisted: false,
               smsBlacklisted: false,
               updateEnabled: true,
