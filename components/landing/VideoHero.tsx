@@ -43,7 +43,15 @@ export default function VideoHero() {
   useEffect(() => {
     const section = sectionRef.current;
     const video = videoRef.current;
-    if (!allowVideo || !section || !video) return;
+    if (!section || !video) return;
+
+    // The element is present from the first HTML response so mobile browsers
+    // (notably iOS Safari) can autoplay it. Stop it here when data-saver or
+    // reduced-motion rules say video should not run.
+    if (!allowVideo) {
+      video.pause();
+      return;
+    }
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -116,21 +124,20 @@ export default function VideoHero() {
   return (
     <section className="video-hero" ref={sectionRef} aria-label="Aromire-Éko community work">
       <div className="video-hero-media" aria-hidden="true">
-        {allowVideo && (
-          <video
-            ref={videoRef}
-            className="video-hero-video"
-            poster="/images/hero-poster.jpg"
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            width={832}
-            height={464}
-          >
-            <source src="/videos/hero-loop.mp4" type="video/mp4" />
-          </video>
-        )}
+        <video
+          ref={videoRef}
+          className={`video-hero-video${allowVideo ? " is-active" : ""}`}
+          poster="/images/hero-poster.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="none"
+          width={832}
+          height={464}
+        >
+          <source src="/videos/hero-loop.mp4" type="video/mp4" />
+        </video>
       </div>
       <div className="video-hero-shade" aria-hidden="true" />
 

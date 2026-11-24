@@ -17,6 +17,7 @@ import FocusIcon from "@/components/landing/FocusIcon";
 import LagosImpactMap from "@/components/landing/LagosImpactMap";
 import TestimonialCarousel from "@/components/landing/TestimonialCarousel";
 import NewsletterForm from "@/components/landing/NewsletterForm";
+import PartnerMarquee from "@/components/landing/PartnerMarquee";
 
 export const metadata: Metadata = {
   title: { absolute: "Home — Aromire-Éko Empowerment Foundation" },
@@ -178,33 +179,7 @@ export default async function HomePage() {
               We work alongside local and regional organizations who share our commitment to
               community-led change.
             </p>
-            <ul className="landing-partner-list">
-              {orderedPartners.map((partner) => {
-                const logo = partner.logoUrl ? (
-                  <Image
-                    src={partner.logoUrl}
-                    alt={partner.logoAlt || partner.name}
-                    width={180}
-                    height={80}
-                    sizes="(max-width: 600px) 45vw, 180px"
-                    {...(partner.logoLqip ? { placeholder: "blur" as const, blurDataURL: partner.logoLqip } : {})}
-                  />
-                ) : (
-                  <span className="landing-partner-name">{partner.name}</span>
-                );
-                return (
-                  <li className="landing-partner-item" key={partner._id}>
-                    {partner.website ? (
-                      <a href={partner.website} target="_blank" rel="noopener noreferrer" aria-label={`${partner.name} (opens in a new tab)`}>
-                        {logo}
-                      </a>
-                    ) : (
-                      logo
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <PartnerMarquee partners={orderedPartners} />
           </div>
         </section>
       )}
@@ -245,7 +220,6 @@ export default async function HomePage() {
                     </div>
                   </div>
                   <div className="landing-news-body">
-                    <p>{event.caption || "Follow the story from the field."}</p>
                     <span>Learn More <span aria-hidden="true">→</span></span>
                   </div>
                 </Link>
