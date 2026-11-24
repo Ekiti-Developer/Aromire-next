@@ -12,6 +12,7 @@ export default defineType({
       type: 'image',
       options: {hotspot: true},
       description: 'Shown square (600×600). Falls back to the logo if empty.',
+      fields: [defineField({name: 'alt', title: 'Alternative text', type: 'string', validation: (rule) => rule.required()})],
     }),
     defineField({name: 'eyebrow', type: 'string', description: 'Default: Who We Are'}),
     defineField({name: 'heading', type: 'string'}),

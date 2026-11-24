@@ -27,8 +27,9 @@ export const pillarType = defineType({
     }),
     defineField({
       name: 'imageAlt',
-      title: 'Image alternative text (optional)',
+      title: 'Image alternative text',
       type: 'string',
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: 'sortOrder',

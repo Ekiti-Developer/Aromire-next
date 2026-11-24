@@ -1,57 +1,110 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { SiteSettings } from "@/sanity/queries/siteSettings";
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/gallery", label: "Gallery" },
-];
-
-export default function Navbar() {
+export default function Navbar({ settings }: { settings: SiteSettings }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Close the mobile menu after navigating
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && open) {
+        setOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
+
+    function closeOnDesktopResize() {
+      if (window.innerWidth > 820) setOpen(false);
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", closeOnDesktopResize);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", closeOnDesktopResize);
+    };
+  }, [open]);
 
   if (pathname.startsWith("/studio")) return null;
 
   return (
-    <nav>
-      <Link className="nav-logo" href="/">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/Logo.svg" alt="Aromire-Éko Logo" style={{ height: 42 }} />
-      </Link>
+    <header className="site-header">
+      <nav className="site-nav" aria-label="Main navigation">
+        <Link className="nav-brand" href="/" aria-label={`${settings.orgName} home`}>
+          <Image
+            src={settings.logoUrl || "/images/Logo.svg"}
+            alt={settings.logoAlt || `${settings.orgName} logo`}
+            width={180}
+            height={66}
+            priority
+          />
+        </Link>
 
-      <ul className={`nav-links${open ? " open" : ""}`} id="nav-links">
-        {links.map(({ href, label }) => (
-          <li key={href}>
-            <Link href={href} className={pathname === href ? "active-link" : undefined}>
-              {label}
-            </Link>
-          </li>
-        ))}
-        <li>
-          <Link href="/contact" className="nav-cta">
-            Get Involved
-          </Link>
-        </li>
-      </ul>
+        <div className={`nav-panel${open ? " open" : ""}`} id="nav-panel">
+          <ul className="nav-links">
+            <li>
+              <Link
+                href="/programs"
+                className={pathname.startsWith("/programs") ? "active-link" : undefined}
+                aria-current={pathname.startsWith("/programs") ? "page" : undefined}
+                onClick={() => setOpen(false)}
+              >
+                Programs
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/blog"
+                className={pathname.startsWith("/blog") ? "active-link" : undefined}
+                aria-current={pathname.startsWith("/blog") ? "page" : undefined}
+                onClick={() => setOpen(false)}
+              >
+                Blog
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/about"
+                className={pathname.startsWith("/about") ? "active-link" : undefined}
+                aria-current={pathname.startsWith("/about") ? "page" : undefined}
+                onClick={() => setOpen(false)}
+              >
+                About
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/volunteer"
+                className={`nav-cta${pathname.startsWith("/volunteer") ? " active-link" : ""}`}
+                aria-current={pathname.startsWith("/volunteer") ? "page" : undefined}
+                onClick={() => setOpen(false)}
+              >
+                Volunteer / Donate
+              </Link>
+            </li>
+          </ul>
+        </div>
 
-      <button
-        className={`hamburger${open ? " active" : ""}`}
-        id="hamburger"
-        aria-label="Toggle menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-    </nav>
+        <button
+          ref={menuButtonRef}
+          className={`hamburger${open ? " active" : ""}`}
+          type="button"
+          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={open}
+          aria-controls="nav-panel"
+          onClick={() => setOpen((isOpen) => !isOpen)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+      </nav>
+    </header>
   );
 }

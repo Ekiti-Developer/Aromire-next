@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-16T00:00:00.000Z",
+  "title": "Design System: Aromire-Éko Empowerment Foundation",
+  "extensions": {
+    "colorMeta": {
+      "plum-950": { "role": "primary", "displayName": "Deep Plum", "canonical": "#16102b", "tonalRamp": ["#080512", "#0d081f", "#16102b", "#241b3a", "#352a52", "#4b3d73", "#8b7bba", "#cfc6e8"] },
+      "ink": { "role": "primary", "displayName": "Plum Ink", "canonical": "#241b3a", "tonalRamp": ["#0d081f", "#16102b", "#241b3a", "#352a52", "#4b3d73", "#8b7bba", "#cfc6e8", "#f7f6f2"] },
+      "teal": { "role": "secondary", "displayName": "Lagos Teal", "canonical": "#0b7b71", "tonalRamp": ["#02201d", "#063b36", "#07534c", "#0a6b62", "#0b7b71", "#0e8a7d", "#5fd6c7", "#d7f5f0"] },
+      "teal-deep": { "role": "secondary", "displayName": "Teal Deep", "canonical": "#0a6b62", "tonalRamp": ["#02201d", "#063b36", "#07534c", "#0a6b62", "#0b7b71", "#0e8a7d", "#5fd6c7", "#d7f5f0"] },
+      "ochre": { "role": "tertiary", "displayName": "Ochre", "canonical": "#c88a2e", "tonalRamp": ["#2e1e08", "#503411", "#7a5214", "#a06f22", "#c88a2e", "#d9ad63", "#e8c48a", "#f7ecd1"] },
+      "ochre-deep": { "role": "tertiary", "displayName": "Ochre Deep", "canonical": "#7a5214", "tonalRamp": ["#2e1e08", "#503411", "#7a5214", "#a06f22", "#c88a2e", "#d9ad63", "#e8c48a", "#f7ecd1"] },
+      "paper": { "role": "neutral", "displayName": "Storybook Paper", "canonical": "#fffdf6", "tonalRamp": ["#5c5a50", "#8f8c7e", "#bfbba9", "#ded9c7", "#efeade", "#f7f3e8", "#fffdf6", "#ffffff"] },
+      "surface": { "role": "neutral", "displayName": "Surface", "canonical": "#ffffff", "tonalRamp": ["#4d4d4d", "#808080", "#b3b3b3", "#d9d9d9", "#ececec", "#f7f7f7", "#ffffff", "#ffffff"] },
+      "tint": { "role": "neutral", "displayName": "Soft White", "canonical": "#f7f6f2", "tonalRamp": ["#4a4944", "#76746d", "#a5a29a", "#c9c7c0", "#e4e2dc", "#efeeea", "#f7f6f2", "#ffffff"] },
+      "mist": { "role": "neutral", "displayName": "Mist Border", "canonical": "#e8e2ec", "tonalRamp": ["#403a48", "#676074", "#948c9f", "#bdb5c6", "#d6cfdf", "#e8e2ec", "#f3f0f7", "#fbfafd"] },
+      "slate": { "role": "neutral", "displayName": "Plum Slate", "canonical": "#3a3a52", "tonalRamp": ["#0d0d18", "#1a1a2e", "#2b2b42", "#3a3a52", "#6e6a78", "#a29fb1", "#d5cfe8", "#f7f6f2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero and page titles in Cormorant Garamond." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles; balanced wrapping." },
+      "body": { "displayName": "Body", "purpose": "Prose and UI text, capped near 75ch." },
+      "label": { "displayName": "Label", "purpose": "Eyebrows and metadata, uppercase." }
+    },
+    "shadows": [
+      { "name": "ambient-card", "value": "0 12px 32px rgba(32,59,49,0.1)", "purpose": "Cards and raised containers on hover." },
+      { "name": "book-shadow", "value": "0 30px 70px rgba(0,0,0,0.5)", "purpose": "Storybook spread on its dark stage." }
+    ],
+    "motion": [
+      { "name": "state-ease", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Single easing for all state transitions; durations scale with consequence." },
+      { "name": "archive-open", "value": "clip-path inset reveal, 620ms, 90ms stagger", "purpose": "The landing hero's one authored entrance; photo settles over 900ms." },
+      { "name": "page-turn", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Storybook page turn, 210ms out / 280ms in." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "600px" },
+      { "name": "md", "value": "820px" },
+      { "name": "lg", "value": "900px" },
+      { "name": "xl", "value": "1240px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action on a surface; used once per decision point.",
+      "html": "<button class=\"ds-btn-primary\">Explore programs</button>",
+      "css": ".ds-btn-primary { background: var(--secondary, #0f766e); color: #fff; padding: 12px 28px; min-height: 48px; border: 0; border-radius: 999px; font: 700 16px Inter, sans-serif; cursor: pointer; transition: background .2s ease, transform .2s ease; } .ds-btn-primary:hover { background: var(--act-navy, #011221); transform: translateY(-2px); } .ds-btn-primary:focus-visible { outline: 3px solid var(--secondary, #0f766e); outline-offset: 3px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action paired with the primary button.",
+      "html": "<button class=\"ds-btn-outline\">View our programs</button>",
+      "css": ".ds-btn-outline { background: transparent; color: var(--secondary, #0f766e); padding: 12px 28px; min-height: 48px; border: 1px solid var(--secondary, #0f766e); border-radius: 999px; font: 700 16px Inter, sans-serif; cursor: pointer; transition: background .2s ease, color .2s ease; } .ds-btn-outline:hover { background: var(--secondary, #0f766e); color: #fff; } .ds-btn-outline:focus-visible { outline: 3px solid var(--secondary, #0f766e); outline-offset: 3px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Category filter; selected state carries the active voice.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"false\">News</button>",
+      "css": ".ds-chip { background: var(--tint, #f7f2e9); color: var(--secondary, #0f766e); padding: 0 16px; min-height: 44px; border: 1px solid var(--mist, #e8e1d7); border-radius: 999px; font: 700 14px Inter, sans-serif; cursor: pointer; } .ds-chip[aria-pressed=\"true\"] { background: var(--secondary, #0f766e); color: #fff; border-color: var(--secondary, #0f766e); } .ds-chip:focus-visible { outline: 3px solid var(--secondary, #0f766e); outline-offset: 3px; }"
+    },
+    {
+      "name": "Content Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Post or program card; flat at rest, lifted on hover.",
+      "html": "<article class=\"ds-card\"><h3>Health checks in Apapa</h3><p>Three days of care with local volunteers.</p></article>",
+      "css": ".ds-card { background: var(--surface, #fff); color: var(--ink, #1a2e25); border: 1px solid var(--mist, #e8e1d7); border-radius: 14px; padding: 20px; transition: box-shadow .2s ease, transform .2s ease; } .ds-card:hover { box-shadow: 0 12px 32px rgba(32,59,49,0.1); transform: translateY(-4px); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Email and search fields with a teal focus treatment.",
+      "html": "<input class=\"ds-input\" type=\"email\" placeholder=\"Enter your email address\" aria-label=\"Email address\">",
+      "css": ".ds-input { background: #fff; color: var(--ink, #1a2e25); border: 1px solid #c9d2df; border-radius: 4px; padding: 12px 14px; min-height: 48px; font: 16px Inter, sans-serif; caret-color: var(--secondary, #0f766e); } .ds-input:focus-visible { outline: 3px solid var(--secondary, #0f766e); outline-offset: 2px; border-color: var(--secondary, #0f766e); }"
+    },
+    {
+      "name": "Site Navigation",
+      "kind": "nav",
+      "refersTo": "nav",
+      "description": "Fixed white header with teal active underline.",
+      "html": "<nav class=\"ds-nav\"><a href=\"/programs\" aria-current=\"page\">Programs</a><a href=\"/blog\">Blog</a></nav>",
+      "css": ".ds-nav { background: #fff; display: flex; gap: 30px; align-items: center; height: 74px; padding: 0 24px; } .ds-nav a { color: var(--ink, #1a2e25); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; border-bottom: 2px solid transparent; font: 600 15px Inter, sans-serif; } .ds-nav a:hover, .ds-nav a[aria-current=\"page\"] { border-bottom-color: var(--secondary, #0f766e); }"
+    },
+    {
+      "name": "Storybook Cover Page",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "The opening page of the field-story viewer.",
+      "html": "<article class=\"ds-book-cover\"><span class=\"ds-book-eyebrow\">A story from the field</span><h2>Health checks in Apapa</h2></article>",
+      "css": ".ds-book-cover { background: linear-gradient(135deg, var(--secondary-deep, #0b4f49), var(--act-navy, #011221)); color: #fff; border: 1px solid var(--gold, #c69a3a); border-radius: 10px; padding: 48px; min-height: 460px; display: flex; flex-direction: column; justify-content: center; } .ds-book-eyebrow { color: var(--gold, #c69a3a); font: 700 12px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; } .ds-book-cover h2 { font: 700 40px 'Cormorant Garamond', Georgia, serif; line-height: 1.05; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Living Archive",
+    "overview": "This is a quietly systematic record of community-led work, not a campaign shell. The interface recedes so the field material leads: program chapters, location labels, captioned photographs and consented voices. Structure is obvious, vocabulary is plain, and nothing asks the visitor to admire the interface instead of the work.\n\nThe archive character favors calm surfaces, disciplined spacing and a small, consistent set of controls. Depth is restrained and tactile: elements lie flat at rest and lift only slightly in response to interaction. Type carries hierarchy through scale and weight rather than decoration.",
+    "keyCharacteristics": [
+      "Documentary imagery from the field, always captioned and situated by location.",
+      "Clear archival structure: program → chapter → place → moment.",
+      "One active accent (teal) with gold reserved for emphasis and provenance.",
+      "Flat surfaces, soft offset hover shadows, pill-shaped controls.",
+      "Mobile-first, accessible, and honest about missing evidence."
+    ],
+    "rules": [
+      { "name": "The One Active Voice Rule", "body": "Teal owns interaction: links, selected chips, focus, buttons. Gold marks provenance and emphasis; ember appears only in impact statistics.", "section": "colors" },
+      { "name": "The Paper Rule", "body": "The storybook stays cream paper in both themes. Dark mode never repaints the book.", "section": "colors" },
+      { "name": "The Balanced Heading Rule", "body": "Headings use balanced wrapping; never ship a heading that leaves a single orphan word.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "Surfaces sit flat until hover, focus or elevation is meaningful.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do lead with real field photography and caption it with location.",
+      "Do keep the secondary accent exclusively for interactive state.",
+      "Do keep reading columns near 75ch and headings balanced.",
+      "Do theme selection, caret and scrollbars from the palette."
+    ],
+    "donts": [
+      "Don't invent impact numbers, quotes or testimonials.",
+      "Don't use hard offset shadows, gradient text or colored borders thicker than 1px on cards and callouts.",
+      "Don't repaint the storybook paper in dark mode.",
+      "Don't let decorative motion obscure content or skip reduced-motion users."
+    ]
+  }
+}

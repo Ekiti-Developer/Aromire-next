@@ -1,17 +1,11 @@
-import {defineType, defineArrayMember} from 'sanity'
+import {defineType, defineArrayMember, defineField} from 'sanity'
 import {ImageIcon} from '@sanity/icons/Image'
+import {PlayIcon} from '@sanity/icons/Play'
 
 /**
- * This is the schema type for block content used in the post document type
- * Importing this type into the studio configuration's `schema` property
- * lets you reuse it in other document types with:
- *  {
- *    name: 'someName',
- *    title: 'Some title',
- *    type: 'blockContent'
- *  }
+ * Portable Text used by blog posts. Portable Text is rendered on the front end
+ * with the already-installed @portabletext/react package.
  */
-
 export const blockContentType = defineType({
   title: 'Block Content',
   name: 'blockContent',
@@ -19,31 +13,24 @@ export const blockContentType = defineType({
   of: [
     defineArrayMember({
       type: 'block',
-      // Styles let you define what blocks can be marked up as. The default
-      // set corresponds with HTML tags, but you can set any title or value
-      // you want, and decide how you want to deal with it where you want to
-      // use your content.
       styles: [
         {title: 'Normal', value: 'normal'},
-        {title: 'H1', value: 'h1'},
         {title: 'H2', value: 'h2'},
         {title: 'H3', value: 'h3'},
-        {title: 'H4', value: 'h4'},
         {title: 'Quote', value: 'blockquote'},
       ],
-      lists: [{title: 'Bullet', value: 'bullet'}],
-      // Marks let you mark up inline text in the Portable Text Editor
+      lists: [
+        {title: 'Bullet', value: 'bullet'},
+        {title: 'Numbered', value: 'number'},
+      ],
       marks: {
-        // Decorators usually describe a single property – e.g. a typographic
-        // preference or highlighting
         decorators: [
           {title: 'Strong', value: 'strong'},
           {title: 'Emphasis', value: 'em'},
         ],
-        // Annotations can be any object structure – e.g. a link or a footnote.
         annotations: [
           {
-            title: 'URL',
+            title: 'Link',
             name: 'link',
             type: 'object',
             fields: [
@@ -51,26 +38,80 @@ export const blockContentType = defineType({
                 title: 'URL',
                 name: 'href',
                 type: 'url',
+                validation: (rule) => rule.required(),
               },
             ],
           },
         ],
       },
     }),
-    // You can add additional types here. Note that you can't use
-    // primitive types such as 'string' and 'number' in the same array
-    // as a block type.
     defineArrayMember({
       type: 'image',
       icon: ImageIcon,
       options: {hotspot: true},
       fields: [
-        {
+        defineField({
           name: 'alt',
           type: 'string',
-          title: 'Alternative Text',
-        }
-      ]
+          title: 'Alternative text',
+          validation: (rule) => rule.required(),
+        }),
+        defineField({
+          name: 'caption',
+          type: 'string',
+          title: 'Caption',
+        }),
+      ],
+    }),
+    defineArrayMember({
+      type: 'object',
+      name: 'youtube',
+      title: 'YouTube video',
+      icon: PlayIcon,
+      fields: [
+        defineField({
+          name: 'url',
+          title: 'YouTube URL',
+          type: 'url',
+          description: 'Paste an unlisted or public YouTube link. Videos load only after a visitor taps play.',
+          validation: (rule) => rule.required().custom((value: string | undefined) => {
+            if (!value) return true
+            try {
+              const url = new URL(value)
+              const allowed = [
+                'youtube.com', 'www.youtube.com', 'm.youtube.com',
+                'youtu.be', 'www.youtube-nocookie.com',
+              ]
+              return url.protocol === 'https:' && allowed.includes(url.hostname)
+                ? true
+                : 'Use a YouTube URL over HTTPS.'
+            } catch {
+              return 'Enter a valid YouTube URL.'
+            }
+          }),
+        }),
+        defineField({
+          name: 'title',
+          title: 'Title (optional)',
+          type: 'string',
+        }),
+      ],
+      preview: {
+        select: {title: 'title', subtitle: 'url'},
+        prepare({title, subtitle}) {
+          return {title: title || 'YouTube video', subtitle}
+        },
+      },
+    }),
+    defineArrayMember({
+      type: 'object',
+      name: 'callout',
+      title: 'Callout',
+      fields: [
+        defineField({name: 'title', type: 'string', validation: (rule) => rule.required()}),
+        defineField({name: 'text', type: 'text', rows: 3, validation: (rule) => rule.required()}),
+      ],
+      preview: {select: {title: 'title', subtitle: 'text'}},
     }),
   ],
 })

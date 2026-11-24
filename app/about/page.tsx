@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import { client } from "@/sanity/lib/client";
+
+import { sanityFetch } from "@/sanity/lib/fetch";
 import { aboutPageMetadataQuery, aboutPageQuery } from "@/sanity/queries/about";
 
 export const revalidate = 60;
@@ -14,18 +14,37 @@ type AboutPageContent = {
   vision: string | null;
   values: string | null;
   approach: string | null;
-  imageUrl: string | null;
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const content = await client.fetch<{ seoTitle: string | null; title: string | null } | null>(
-    aboutPageMetadataQuery,
-  );
-  return { title: content?.seoTitle || content?.title || "About Us" };
+  try {
+    const content = await sanityFetch<{ seoTitle: string | null; title: string | null } | null>(
+      aboutPageMetadataQuery,
+      {},
+      ["aboutPage"],
+    );
+    return {
+      title: content?.seoTitle || content?.title || "About Us",
+      description: "Learn who we are, what we stand for and how we work with communities in Lagos.",
+    };
+  } catch (error) {
+    console.error("Failed to fetch about page metadata:", error);
+    return {
+      title: "About Us",
+      description: "Learn who we are, what we stand for and how we work with communities in Lagos.",
+    };
+  }
 }
 
 export default async function AboutPage() {
-  const content = await client.fetch<AboutPageContent | null>(aboutPageQuery);
+  let content: AboutPageContent | null = null;
+
+  try {
+    content = await sanityFetch<AboutPageContent | null>(aboutPageQuery, {}, ["aboutPage"]);
+  } catch (error) {
+    console.error("Failed to fetch about page content:", error);
+  }
+
   const title = content?.heading || content?.title || "About Us";
   const sections = [
     { title: "Our Mission", text: content?.mission },
@@ -35,45 +54,31 @@ export default async function AboutPage() {
   ].filter((section) => section.text);
 
   return (
-    <div className="about-page">
-      <section id="about" className="about-page-intro">
-        <div className="about-page-hero about-grid">
-          <div className="about-image-block">
-            <div className={`about-image-box${content?.imageUrl ? " has-image" : " logo-fallback"}`}>
-              <Image
-                src={content?.imageUrl || "/images/Logo.svg"}
-                alt={content?.imageUrl ? title : "Aromire-Éko Empowerment Foundation"}
-                width={600}
-                height={600}
-                priority
-              />
-            </div>
-          </div>
-          <div className="about-content">
-            <p className="section-eyebrow">{content?.eyebrow || "Who We Are"}</p>
-            <div className="gold-divider" />
-            <h1 className="section-title">{title}</h1>
+    <div className="site-page">
+      <header className="site-hero">
+        <div className="act-container site-hero-inner">
+          <div className="site-hero-copy">
+            <h1 className="site-title">{title}</h1>
             {content?.intro ? (
-              <p className="about-page-intro-text">{content.intro}</p>
+              <p className="site-lead">{content.intro}</p>
             ) : (
-              <p className="about-page-intro-text">About page content is being prepared.</p>
+              <p className="site-lead">About page content is being prepared.</p>
             )}
           </div>
         </div>
-      </section>
+      </header>
 
       {sections.length > 0 && (
-        <section className="about-page-details" aria-label="About our organization">
-          <div className="about-page-details-inner">
-            {sections.map((section, index) => (
-              <article className="about-page-detail" key={section.title}>
-                <span className="about-page-detail-index">0{index + 1}</span>
-                <div>
+        <section className="act-section" aria-label="About our organization">
+          <div className="act-container">
+            <div className="site-detail-grid">
+              {sections.map((section) => (
+                <article className="site-detail" key={section.title}>
                   <h2>{section.title}</h2>
                   <p>{section.text}</p>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))}
+            </div>
           </div>
         </section>
       )}

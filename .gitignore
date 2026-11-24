@@ -1,5 +1,30 @@
 node_modules
 .next
+.next-3001
 next-env.d.ts
-.env*.local
 
+# Secrets: ignore every env file except the safe template
+.env
+.env.*
+!.env.example
+
+# Local tools and generated output
+.models
+.claude
+.agents
+.opencode
+.next-profiles
+dist
+*.tsbuildinfo
+
+# Documentation
+*.md
+
+# Build logs
+build*.log
+buildlog.txt
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

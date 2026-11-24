@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { sanityConfig } from "@/lib/sanity";
+
+import { sanityConfig } from "@/lib/sanity/client";
 
 export async function GET() {
-  const isConfigured = sanityConfig.projectId !== "your-project-id";
+  const configured = Boolean(
+    sanityConfig.projectId && sanityConfig.projectId !== "your-project-id" && sanityConfig.dataset,
+  );
 
   return NextResponse.json({
-    status: isConfigured ? "configured" : "not-configured",
-    projectId: sanityConfig.projectId,
-    dataset: sanityConfig.dataset,
+    status: configured ? "configured" : "not-configured",
     apiVersion: sanityConfig.apiVersion,
   });
 }

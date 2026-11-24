@@ -1,0 +1,91 @@
+/* ============================================================
+   SITE PAGES — About & Contact, aligned to DESIGN.md
+   Warm sand base, mustard provenance, clay interaction.
+   ============================================================ */
+
+.site-page {
+  min-height: calc(100vh - var(--nav-height));
+  padding-top: var(--nav-height);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.site-hero {
+  padding: 76px 0 84px;
+  background: var(--canvas);
+  color: var(--text-primary);
+}
+.site-hero-compact { padding: 72px 0; text-align: center; }
+.site-hero .site-eyebrow { color: var(--provenance-deep); }
+.site-hero-inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; align-items: center; }
+
+.site-eyebrow {
+  margin: 0 0 12px;
+  color: var(--provenance-deep);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.site-title {
+  margin: 0 0 18px;
+  color: var(--text-primary);
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(2.8rem, 8vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1;
+  text-wrap: balance;
+}
+.site-lead {
+  max-width: 680px;
+  margin: 0;
+  color: var(--text-body);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+.site-hero-compact .site-lead { margin-inline: auto; }
+
+.site-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.site-detail {
+  padding: 24px;
+  border: 1px solid var(--mist);
+  border-radius: 14px;
+  background: var(--card);
+  transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+}
+.site-detail:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.site-detail h2 { margin: 0 0 8px; font-family: var(--font-serif), Georgia, serif; font-size: 1.6rem; }
+.site-detail p { color: var(--text-secondary); line-height: 1.7; }
+
+.site-form-wrap { max-width: 760px; }
+.site-form-wrap .form-field label,
+.site-form-wrap .phone-input-hint { color: var(--text); }
+.site-form-wrap input,
+.site-form-wrap textarea,
+.site-form-wrap select {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+.site-form-wrap input::placeholder,
+.site-form-wrap textarea::placeholder { color: var(--text-muted); opacity: 1; }
+.site-form-wrap select option { background: var(--surface); color: var(--text-primary); }
+.site-form-wrap input:focus-visible,
+.site-form-wrap textarea:focus-visible,
+.site-form-wrap select:focus-visible {
+  border-color: var(--accent);
+  outline-color: var(--focus);
+}
+
+@media (min-width: 760px) {
+  .site-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+}
+@media (max-width: 640px) {
+  .site-page { padding-top: var(--nav-height-mobile); }
+  .site-hero { padding: 56px 0 64px; }
+  .site-hero-compact { padding: 56px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-detail, .site-detail:hover { transition: none !important; transform: none !important; }
+}

@@ -1,0 +1,56 @@
+# Render Blueprint for Aromire-Éko.
+# Values marked sync:false are prompted for when you create the service.
+services:
+  - type: web
+    name: aromire-eko-web
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      # Next.js 16 requires Node >= 20.9
+      - key: NODE_VERSION
+        value: "22"
+
+      # Single trusted edge proxy in front of the app on Render
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+
+      # Canonical origin used by sitemap/robots - set to your final HTTPS URL
+      - key: SITE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+
+      # Sanity (project settings + webhook secret)
+      - key: NEXT_PUBLIC_SANITY_PROJECT_ID
+        sync: false
+      - key: NEXT_PUBLIC_SANITY_DATASET
+        sync: false
+      - key: NEXT_PUBLIC_SANITY_API_VERSION
+        sync: false
+      - key: SANITY_REVALIDATE_SECRET
+        sync: false
+
+      # Studio gate at /studio - without both, the route returns 404
+      - key: STUDIO_USER
+        sync: false
+      - key: STUDIO_PASSWORD
+        sync: false
+
+      # Brevo (forms)
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_CONTACT_LIST_ID
+        sync: false
+      - key: BREVO_VOLUNTEER_LIST_ID
+        sync: false
+      - key: BREVO_DONATION_LIST_ID
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
+        sync: false
+      - key: BREVO_RECIPIENT_EMAIL
+        sync: false

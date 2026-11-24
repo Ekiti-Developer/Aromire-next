@@ -1,5 +1,5 @@
 export const hero = {
-  eyebrow: "Empowering Communities, Transforming Lives",
-  title: "Building a Stronger Community Together",
-  subtitle: "", // optional: leave empty to hide
+  eyebrow: "Who we are",
+  title: "Health, skills and livelihoods for Lagos communities",
+  subtitle: "Community-led programs, built around the places people live and work.",
 };
