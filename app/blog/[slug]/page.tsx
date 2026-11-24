@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import PortableBody from "@/components/blog/PortableBody";
 import ShareButtons from "@/components/blog/ShareButtons";
 import { sanityFetch } from "@/sanity/lib/fetch";
+import { normalizeAlt } from "@/lib/alt-text";
 import {
   postBySlugQuery,
   postSlugsQuery,
@@ -132,7 +133,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         <div className="blog-post-cover">
           <Image
             src={post.coverImage.url}
-            alt={post.coverImage.alt || post.title}
+            alt={normalizeAlt(post.coverImage.alt, post.title)}
             fill
             priority
             sizes="(max-width: 900px) 100vw, 1100px"
@@ -161,7 +162,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                     {item.coverImage?.url ? (
                       <Image
                         src={item.coverImage.url}
-                        alt={item.coverImage.alt || item.title}
+                        alt={normalizeAlt(item.coverImage.alt, item.title)}
                         fill
                         sizes="(max-width: 640px) 100vw, 33vw"
                         {...(item.coverImage.lqip ? { placeholder: "blur" as const, blurDataURL: item.coverImage.lqip } : {})}

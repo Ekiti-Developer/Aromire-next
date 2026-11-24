@@ -72,7 +72,7 @@ export default function NewsletterForm() {
       </label>
       <p className="landing-newsletter-note">You may unsubscribe at any time using the link in our newsletter.</p>
       {message && (
-        <p className={`landing-newsletter-status ${status}`} role="status">
+        <p className={`landing-newsletter-status ${status}`} role={status === "error" ? "alert" : "status"}>
           {message}
         </p>
       )}

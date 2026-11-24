@@ -9,12 +9,15 @@ import {
   formatDateRange,
   type StorybookProgram,
 } from "@/lib/storybook";
-import { getVideoThumbnailUrl, isDirectVideoUrl } from "@/lib/video";
+import { normalizeInternalHref } from "@/lib/internal-href";
+import { normalizeAlt } from "@/lib/alt-text";
+import { getVideoThumbnailUrl } from "@/lib/video";
 import ChapterNav, { type ChapterNavItem } from "@/components/storybook/ChapterNav";
 import Reveal from "@/components/storybook/Reveal";
 import StorybookButton from "@/components/storybook/StorybookButton";
 import StorybookProvider from "@/components/storybook/StorybookProvider";
 import VideoPoster from "@/components/storybook/VideoPoster";
+import PhotoLightbox, { type LightboxItem } from "@/components/storybook/PhotoLightbox";
 import {
   nextProgramQuery,
   programBySlugQuery,
@@ -30,8 +33,6 @@ export const revalidate = 60;
 type PageProps = { params: Promise<{ slug: string }> };
 
 type NextStory = { title: string; slug: string };
-
-const firstProgramQuery = `*[_type == "program" && status == "published" && isSample != true] | order(startDate desc)[0]{title, "slug": slug.current}`;
 
 export async function generateStaticParams() {
   try {
@@ -71,7 +72,9 @@ function blurProps(image?: { lqip?: string } | null) {
   return image?.lqip ? { placeholder: "blur" as const, blurDataURL: image.lqip } : {};
 }
 
-function tileClasses(index: number, count: number) {
+function tileClasses(index: number, count: number, isVideo = false) {
+  // A square cell keeps the embedded video from being stretched.
+  if (isVideo) return "tile-c2 tile-r4";
   if (count === 1) return "tile-c4 tile-r3";
   if (count === 2) return "tile-c2 tile-r3";
   if (index === 0) return "tile-c2 tile-r4";
@@ -99,32 +102,51 @@ function Facts({ facts }: { facts: ReturnType<typeof buildPages>["totals"] }) {
 
 function PhotoTile({
   photo,
-  page,
   chapterNumber,
   title,
+  media,
+  mediaIndex,
 }: {
   photo: ProgramPhoto;
-  page: number;
   chapterNumber: number;
   title: string;
+  media: LightboxItem[];
+  mediaIndex: number;
 }) {
   const image = photoImage(photo);
   const isVideo = photo.mediaType === "video";
   const thumbnailUrl = isVideo ? getVideoThumbnailUrl(photo.videoUrl) : null;
   const imageSrc = thumbnailUrl || image?.url || null;
-  const direct = isDirectVideoUrl(photo.videoUrl);
 
+  // Videos are not part of the picture-only book, so play them here instead
+  // of sending the tile to a page that does not exist.
+  if (isVideo && photo.videoUrl) {
+    return (
+      <VideoPoster
+        url={photo.videoUrl}
+        posterUrl={imageSrc}
+        posterAlt={image?.alt}
+        title={photo.caption || `${title} video`}
+        caption={photo.caption}
+        sizes="(max-width: 600px) 50vw, 25vw"
+        variant="tile"
+        className="story-photo-tile"
+      />
+    );
+  }
+
+  const alt = normalizeAlt(image?.alt, photo.caption || `${title} photo`);
   return (
-    <StorybookButton
+    <PhotoLightbox
       className="story-photo-tile"
-      page={page}
-      photoKey={photo._key}
-      aria-label={`Open ${isVideo ? "video" : "photo"}${photo.caption ? `: ${photo.caption}` : ""} in the storybook`}
+      items={media}
+      initialIndex={mediaIndex}
+      label={`View fullscreen: ${photo.caption || `${title} photo`}`}
     >
       {imageSrc ? (
         <Image
           src={imageSrc}
-          alt={image?.alt || photo.caption || `${title} photo`}
+          alt={alt}
           fill
           sizes="(max-width: 600px) 50vw, 25vw"
           {...(thumbnailUrl ? {} : blurProps(image))}
@@ -132,38 +154,37 @@ function PhotoTile({
       ) : (
         <span className="story-photo-tile-fallback" aria-hidden="true" />
       )}
-      {isVideo && <span className="story-photo-play" aria-hidden="true">&#9654;</span>}
       {photo.caption && <span className="story-photo-caption">{photo.caption}</span>}
-      {direct && <span className="visually-hidden">Direct video</span>}
       <span className="visually-hidden">Chapter {chapterNumber}</span>
-    </StorybookButton>
+    </PhotoLightbox>
   );
 }
 
 function LocationPhotoGroup({
   location,
   photos,
-  pageMap,
   chapterNumber,
   title,
+  media,
 }: {
   location: string;
   photos: ProgramPhoto[];
-  pageMap: Record<string, number>;
   chapterNumber: number;
   title: string;
+  media: LightboxItem[];
 }) {
   return (
     <section className="story-location-group" aria-label={`Photos at ${location}`}>
       <h3 className="story-location-label"><span aria-hidden="true">&#9679;</span> At {location}</h3>
       <div className="story-photo-grid">
         {photos.map((photo, index) => (
-          <div className={`story-photo-cell ${tileClasses(index, photos.length)}`} key={photo._key}>
+          <div className={`story-photo-cell ${tileClasses(index, photos.length, photo.mediaType === "video")}`} key={photo._key}>
             <PhotoTile
               photo={photo}
-              page={pageMap[photo._key] ?? 0}
               chapterNumber={chapterNumber}
               title={title}
+              media={media}
+              mediaIndex={media.findIndex((item) => item.key === photo._key)}
             />
           </div>
         ))}
@@ -175,13 +196,13 @@ function LocationPhotoGroup({
 function ChapterSection({
   chapter,
   index,
-  pageMap,
   title,
+  media,
 }: {
   chapter: ProgramChapter;
   index: number;
-  pageMap: Record<string, number>;
   title: string;
+  media: LightboxItem[];
 }) {
   const chapterNumber = index + 1;
   const groups = new Map<string, ProgramPhoto[]>();
@@ -213,9 +234,9 @@ function ChapterSection({
             key={location}
             location={location}
             photos={photos}
-            pageMap={pageMap}
             chapterNumber={chapterNumber}
             title={title}
+            media={media}
           />
         ))}
       </div>
@@ -241,9 +262,6 @@ export default async function ProgramStoryPage({ params }: PageProps) {
       { currentStartDate: program.startDate },
       ["program"],
     );
-    if (!nextStory) {
-      nextStory = await sanityFetch<NextStory | null>(firstProgramQuery, {}, ["program"]);
-    }
   } catch (error) {
     console.error("Failed to fetch next story:", error);
   }
@@ -251,6 +269,21 @@ export default async function ProgramStoryPage({ params }: PageProps) {
   const storybookProgram = program as StorybookProgram;
   const model = buildPages(storybookProgram, { nextStory });
   const chapters = program.chapters ?? [];
+  const media: LightboxItem[] = chapters.flatMap((chapter) =>
+    (chapter.photos ?? []).map((photo) => {
+      const image = photoImage(photo);
+      const isVideo = photo.mediaType === "video";
+      const thumb = isVideo ? getVideoThumbnailUrl(photo.videoUrl) : null;
+      return {
+        key: photo._key,
+        type: isVideo ? ("video" as const) : ("image" as const),
+        src: image?.url || thumb || "",
+        alt: normalizeAlt(image?.alt, photo.caption || `${program.title} photo`),
+        caption: photo.caption,
+        videoUrl: photo.videoUrl,
+      };
+    }),
+  );
   const dateRange = formatDateRange(program.startDate, program.endDate);
   const chapterItems: ChapterNavItem[] = chapters.map((chapter, index) => ({
     id: `chapter-${index + 1}`,
@@ -266,7 +299,7 @@ export default async function ProgramStoryPage({ params }: PageProps) {
           <div className="story-cover-inner">
             <Link href="/programs" className="story-back-link">&#8592; All programs</Link>
             <div className="story-cover-heading">
-              {dateRange && <p className="story-cover-pill">A story from the field · {dateRange}</p>}
+              {dateRange && <p className="story-cover-date">{dateRange}</p>}
               <h1>{program.title}</h1>
               {program.hook && <p className="story-cover-hook">{program.hook}</p>}
             </div>
@@ -275,7 +308,7 @@ export default async function ProgramStoryPage({ params }: PageProps) {
               <div className="story-cover-media">
                 <Image
                   src={program.cover.url}
-                  alt={program.cover.alt || program.title}
+                  alt={normalizeAlt(program.cover.alt, program.title)}
                   fill
                   priority
                   sizes="(max-width: 900px) 100vw, 90vw"
@@ -306,8 +339,8 @@ export default async function ProgramStoryPage({ params }: PageProps) {
               key={chapter._key}
               chapter={chapter}
               index={index}
-              pageMap={model.photoToPage}
               title={program.title}
+              media={media}
             />
           ))}
 
@@ -324,7 +357,7 @@ export default async function ProgramStoryPage({ params }: PageProps) {
                           {partner.logo ? (
                             <Image
                               src={partner.logo}
-                              alt={partner.logoAlt || partner.name}
+                              alt={normalizeAlt(partner.logoAlt, partner.name)}
                               width={160}
                               height={64}
                               sizes="160px"
@@ -336,7 +369,7 @@ export default async function ProgramStoryPage({ params }: PageProps) {
                       ) : partner.logo ? (
                         <Image
                           src={partner.logo}
-                          alt={partner.logoAlt || partner.name}
+                          alt={normalizeAlt(partner.logoAlt, partner.name)}
                           width={160}
                           height={64}
                           sizes="160px"
@@ -369,7 +402,7 @@ export default async function ProgramStoryPage({ params }: PageProps) {
                   <div className="story-testimonial-photo">
                     <Image
                       src={testimonial.photo.url}
-                      alt={testimonial.photo.alt || testimonial.name || "Program participant"}
+                      alt={normalizeAlt(testimonial.photo.alt, testimonial.name || "Program participant")}
                       fill
                       sizes="(max-width: 700px) 100vw, 320px"
                       {...blurProps(testimonial.photo)}
@@ -390,7 +423,7 @@ export default async function ProgramStoryPage({ params }: PageProps) {
               <p className="section-eyebrow">Keep the story going</p>
               <h2>{program.storyCta?.label?.trim() || "Help us write the next chapter"}</h2>
               {(() => {
-                const href = program.storyCta?.href?.trim() || "/volunteer";
+                const href = normalizeInternalHref(program.storyCta?.href);
                 return /^https?:\/\//i.test(href) ? (
                   <a href={href} target="_blank" rel="noopener noreferrer" className="btn-gold">
                     {program.storyCta?.label?.trim() || "Volunteer / Donate"} <span aria-hidden="true">↗</span>
@@ -403,12 +436,6 @@ export default async function ProgramStoryPage({ params }: PageProps) {
               })()}
             </div>
 
-            {nextStory && (
-              <Link className="story-next-link" href={`/programs/${encodeURIComponent(nextStory.slug)}`}>
-                <span>Next story</span>
-                <strong>{nextStory.title} <span aria-hidden="true">→</span></strong>
-              </Link>
-            )}
           </Reveal>
         </div>
       </article>

@@ -150,7 +150,7 @@ export default async function HomePage() {
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
-                      alt={pillar.imageAlt || photo?.alt || pillar.title}
+                      alt=""
                       fill
                       sizes="(max-width: 700px) 100vw, 50vw"
                       {...(pillar.imageLqip ? { placeholder: "blur" as const, blurDataURL: pillar.imageLqip } : {})}
@@ -209,7 +209,7 @@ export default async function HomePage() {
                     {(() => {
                       const photo = event.photos[0] ?? event.coverPhoto;
                       return photo?.src ? (
-                        <Image src={photo.src} alt={photo.alt || event.title} fill sizes="(max-width: 700px) 100vw, 33vw" />
+                        <Image src={photo.src} alt="" fill sizes="(max-width: 700px) 100vw, 33vw" />
                       ) : (
                         <span className="landing-news-image-fallback" aria-hidden="true" />
                       );

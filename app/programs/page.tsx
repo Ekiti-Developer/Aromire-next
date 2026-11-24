@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { sanityFetch } from "@/sanity/lib/fetch";
 import { formatDateRange } from "@/lib/storybook";
+import { normalizeAlt } from "@/lib/alt-text";
 import {
   programsListQuery,
   type ProgramsList,
@@ -28,7 +29,7 @@ export default async function ProgramsPage() {
     console.error("Failed to fetch programs:", error);
   }
 
-  programs.sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""));
+  programs.sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""));
 
   return (
     <div className="programs-story-page">
@@ -56,7 +57,7 @@ export default async function ProgramsPage() {
                     {program.cover?.url ? (
                       <Image
                         src={program.cover.url}
-                        alt={program.cover.alt || program.title}
+                        alt={normalizeAlt(program.cover.alt, program.title)}
                         fill
                         sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw"
                         {...blurProps(program.cover)}

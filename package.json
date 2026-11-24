@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --test lib/storybook.test.ts lib/rate-limit.test.ts lib/webhook-auth.test.ts lib/site-url.test.ts lib/studio-auth.test.ts",
+    "test": "node --test lib/storybook.test.ts lib/rate-limit.test.ts lib/webhook-auth.test.ts lib/site-url.test.ts lib/studio-auth.test.ts lib/internal-href.test.ts lib/alt-text.test.ts",
     "seed": "node scripts/seed.mjs",
     "migrate:v1:dry-run": "node scripts/migrate-v1-dry-run.mjs"
   },

@@ -3,7 +3,7 @@
  */
 
 // Query for the programs list page
-export const programsListQuery = `*[_type == "program" && status == "published" && isSample != true] | order(startDate desc) {
+export const programsListQuery = `*[_type == "program" && status == "published" && isSample != true] | order(startDate asc) {
   _id,
   title,
   "slug": slug.current,

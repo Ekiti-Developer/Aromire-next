@@ -81,7 +81,7 @@ export default function DonationForm() {
       </button>
 
       {message && (
-        <p className={`volunteer-status ${status}`} role="status">
+        <p className={`volunteer-status ${status}`} role={status === "error" ? "alert" : "status"}>
           {message}
         </p>
       )}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { SiteSettings } from "@/sanity/queries/siteSettings";
+import { normalizeAlt } from "@/lib/alt-text";
 
 export default function Navbar({ settings }: { settings: SiteSettings }) {
   const pathname = usePathname();
@@ -39,7 +40,7 @@ export default function Navbar({ settings }: { settings: SiteSettings }) {
         <Link className="nav-brand" href="/" aria-label={`${settings.orgName} home`}>
           <Image
             src={settings.logoUrl || "/images/Logo.svg"}
-            alt={settings.logoAlt || `${settings.orgName} logo`}
+            alt={normalizeAlt(settings.logoAlt, `${settings.orgName} logo`)}
             width={180}
             height={66}
             priority

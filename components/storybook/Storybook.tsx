@@ -3,6 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { normalizeInternalHref } from "@/lib/internal-href";
+import { normalizeAlt } from "@/lib/alt-text";
 import {
   buildPages,
   type StorybookNextStory,
@@ -28,7 +31,7 @@ function blurProps(image?: { lqip?: string | null } | null) {
 
 function StoryCta({ label, href }: { label?: string; href?: string }) {
   const text = label?.trim() || "Help us write the next one";
-  const url = href?.trim() || "/volunteer";
+  const url = normalizeInternalHref(href);
   if (/^https?:\/\//i.test(url)) {
     return (
       <a className="storybook-donate" href={url} target="_blank" rel="noopener noreferrer">
@@ -44,22 +47,14 @@ function PlateImage({ page, sizes }: { page: StorybookPage; sizes: string }) {
   if (image?.url) {
     return (
       <div className="storybook-plate-image">
-        <Image src={image.url} alt={image.alt || page.caption || ""} fill sizes={sizes} {...blurProps(image)} />
+        <Image src={image.url} alt={normalizeAlt(image.alt, page.caption || "")} fill sizes={sizes} {...blurProps(image)} />
       </div>
     );
   }
   return <div className="storybook-plate-empty" aria-hidden="true" />;
 }
 
-function StoryPageView({
-  page,
-  isMobile,
-  programTitle,
-}: {
-  page: StorybookPage;
-  isMobile: boolean;
-  programTitle: string;
-}) {
+function StoryPageView({ page, isMobile }: { page: StorybookPage; isMobile: boolean }) {
   const sizes = isMobile ? "100vw" : "50vw";
   const className = `storybook-page storybook-page-${page.kind}`;
 
@@ -168,16 +163,6 @@ function StoryPageView({
             {page.facts.days} days · {page.facts.locations} locations · {page.facts.partners} partners · {page.facts.photos} photos · {page.facts.videos} videos
           </p>
         )}
-        <StoryCta label={page.ctaLabel} href={page.ctaHref} />
-        {page.nextStory && (
-          <p className="storybook-next">
-            Next story:{" "}
-            <Link href={`/programs/${encodeURIComponent(page.nextStory.slug)}`}>
-              {page.nextStory.title} →
-            </Link>
-          </p>
-        )}
-        <p className="storybook-end-signature">{programTitle}</p>
       </article>
     );
   }
@@ -197,7 +182,6 @@ function StoryPageView({
             </Link>
           </p>
         )}
-        <p className="storybook-end-signature">{programTitle}</p>
       </article>
     );
   }
@@ -247,11 +231,12 @@ export default function Storybook({
     const candidate = fromKey ?? initialPage;
     return Number.isFinite(candidate) ? Math.min(Math.max(candidate, 0), Math.max(total - step, 0)) : 0;
   });
+  const [hasNavigated, setHasNavigated] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const animatingRef = useRef(false);
   const pageRef = useRef(page);
-  const touchStartX = useRef(0);
+  const touchStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     pageRef.current = page;
@@ -269,10 +254,22 @@ export default function Storybook({
   }, [isMobile, total, step]);
 
   useEffect(() => {
-    closeRef.current?.focus();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    // The viewer is dynamically imported and the page grid remounts via
+    // `key={page}`. Focus after two frames so the close control is the one
+    // that receives it, not a transient Next-page button or <body>.
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        closeRef.current?.focus({ preventScroll: true });
+      });
+    });
+
     return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame) cancelAnimationFrame(secondFrame);
       document.body.style.overflow = previousOverflow;
     };
   }, []);
@@ -296,48 +293,113 @@ export default function Storybook({
       const current = pageRef.current;
       if (target === current || target < 0 || target >= total) return;
 
+      animatingRef.current = true;
+      const direction = target > current ? -1 : 1;
+      const shadow = (sign: number) => `${sign * 18}px 0 44px rgba(10, 8, 25, 0.45)`;
+      const clean = (elements: Element[], animations: Animation[]) => {
+        animations.forEach((animation) => animation.cancel());
+        elements.forEach((element) => {
+          const node = element as HTMLElement;
+          node.style.willChange = "";
+          node.style.transformOrigin = "";
+        });
+      };
+      const settled = (animations: Animation[]) =>
+        Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
+
+      // Reduced motion: keep the state change legible with a gentle crossfade,
+      // but remove the spatial turn entirely.
       if (reducedMotion) {
+        const outgoing = visibleElements();
+        const fadeOut = outgoing.map((element) =>
+          element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: "ease-out", fill: "forwards" }),
+        );
+        await settled(fadeOut);
+        clean(outgoing, fadeOut);
+
         commit(target);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+        const incoming = visibleElements();
+        const fadeIn = incoming.map((element) =>
+          element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: "ease-out", fill: "forwards" }),
+        );
+        await settled(fadeIn);
+        clean(incoming, fadeIn);
+        animatingRef.current = false;
         return;
       }
 
-      animatingRef.current = true;
-      const direction = target > current ? -1 : 1;
       const outgoing = visibleElements();
-      const outAnimations = outgoing.map((element) =>
-        element.animate(
+      const outAnimations = outgoing.map((element, index) => {
+        const node = element as HTMLElement;
+        // Hinge on the spine so the spread swings like a book, not a card.
+        const isLeft = step === 2 && index === 0;
+        node.style.transformOrigin = step === 1 ? (direction < 0 ? "left center" : "right center") : isLeft ? "right center" : "left center";
+        node.style.willChange = "transform, opacity, filter, box-shadow";
+        // The page closer to the spine travels less; the outer page leads.
+        const factor = step === 1 ? 1 : direction < 0 ? (isLeft ? 0.45 : 1) : isLeft ? 1 : 0.45;
+        return node.animate(
           [
-            { transform: "perspective(1600px) rotateY(0deg)", opacity: 1 },
-            { transform: `perspective(1600px) rotateY(${direction * 78}deg)`, opacity: 0.1 },
+            { transform: "rotateY(0deg) translateZ(0)", opacity: 1, filter: "blur(0px)", boxShadow: "0 0 0 rgba(10, 8, 25, 0)" },
+            {
+              transform: `rotateY(${direction * 84 * factor}deg) translateZ(28px)`,
+              opacity: 0.18,
+              filter: "blur(2px)",
+              boxShadow: shadow(direction),
+            },
           ],
-          { duration: 210, easing: "ease-in", fill: "forwards" },
-        ),
-      );
-      await Promise.all(outAnimations.map((animation) => animation.finished.catch(() => undefined)));
-      outAnimations.forEach((animation) => animation.cancel());
+          { duration: 260, easing: "cubic-bezier(0.5, 0.05, 0.2, 1.02)", fill: "forwards" },
+        );
+      });
+      await settled(outAnimations);
+      clean(outgoing, outAnimations);
 
       commit(target);
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
       const incoming = visibleElements();
-      const inAnimations = incoming.map((element) =>
-        element.animate(
+      const inAnimations = incoming.map((element, index) => {
+        const node = element as HTMLElement;
+        const isLeft = step === 2 && index === 0;
+        node.style.transformOrigin = step === 1 ? (direction < 0 ? "right center" : "left center") : isLeft ? "right center" : "left center";
+        node.style.willChange = "transform, opacity, filter, box-shadow";
+        const factor = step === 1 ? 1 : direction < 0 ? (isLeft ? 0.45 : 1) : isLeft ? 1 : 0.45;
+        return node.animate(
           [
-            { transform: `perspective(1600px) rotateY(${-direction * 78}deg)`, opacity: 0.1 },
-            { transform: "perspective(1600px) rotateY(0deg)", opacity: 1 },
+            {
+              transform: `rotateY(${-direction * 80 * factor}deg) translateZ(28px)`,
+              opacity: 0.2,
+              filter: "blur(2px)",
+              boxShadow: shadow(-direction),
+            },
+            {
+              transform: `rotateY(${direction * 2.5 * factor}deg) translateZ(0)`,
+              opacity: 1,
+              filter: "blur(0px)",
+              boxShadow: "0 0 0 rgba(10, 8, 25, 0)",
+              offset: 0.8,
+            },
+            { transform: "rotateY(0deg) translateZ(0)", opacity: 1, filter: "blur(0px)", boxShadow: "0 0 0 rgba(10, 8, 25, 0)" },
           ],
-          { duration: 280, easing: "ease-out", fill: "forwards" },
-        ),
-      );
-      await Promise.all(inAnimations.map((animation) => animation.finished.catch(() => undefined)));
-      inAnimations.forEach((animation) => animation.cancel());
+          { duration: 440, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards" },
+        );
+      });
+      await settled(inAnimations);
+      clean(incoming, inAnimations);
       animatingRef.current = false;
     },
-    [commit, reducedMotion, total, visibleElements],
+    [commit, reducedMotion, step, total, visibleElements],
   );
 
-  const next = useCallback(() => void turnTo(Math.min(pageRef.current + step, total - step)), [step, total, turnTo]);
-  const previous = useCallback(() => void turnTo(Math.max(pageRef.current - step, 0)), [step, turnTo]);
+  const next = useCallback(() => {
+    setHasNavigated(true);
+    void turnTo(Math.min(pageRef.current + step, total - step));
+  }, [step, total, turnTo]);
+  const previous = useCallback(() => {
+    setHasNavigated(true);
+    void turnTo(Math.max(pageRef.current - step, 0));
+  }, [step, turnTo]);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -379,10 +441,12 @@ export default function Storybook({
     const result: StorybookPage[] = [];
     for (let offset = 0; offset < step && page + offset < total; offset += 1) {
       const candidate = model.pages[page + offset];
-      if (candidate && !candidate.skipOnMobile) result.push(candidate);
+      // Caption pages only disappear on phones; on desktop they are the
+      // facing page of their photo plate and must stay in the spread.
+      if (candidate && (!isMobile || !candidate.skipOnMobile)) result.push(candidate);
     }
     return result;
-  }, [model.pages, page, step, total]);
+  }, [isMobile, model.pages, page, step, total]);
 
   const activePage = model.pages[page];
   const chapterLabel = activePage?.chapterNumber
@@ -411,8 +475,21 @@ export default function Storybook({
           className="storybook-topbtn storybook-close"
           onClick={onClose}
           aria-label="Close storybook"
+          autoFocus
         >
-          &times;
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
         </button>
       </div>
 
@@ -420,13 +497,20 @@ export default function Storybook({
         <div
           className={`storybook-book${isMobile ? " mobile" : ""}`}
           onTouchStart={(event) => {
-            touchStartX.current = event.touches[0]?.clientX ?? 0;
+            const touch = event.touches[0];
+            touchStart.current = { x: touch?.clientX ?? 0, y: touch?.clientY ?? 0 };
+          }}
+          onTouchCancel={() => {
+            touchStart.current = { x: 0, y: 0 };
           }}
           onTouchEnd={(event) => {
-            const endX = event.changedTouches[0]?.clientX ?? 0;
-            const diff = touchStartX.current - endX;
-            if (Math.abs(diff) > 40) {
-              if (diff > 0) next();
+            const touch = event.changedTouches[0];
+            const diffX = touchStart.current.x - (touch?.clientX ?? 0);
+            const diffY = touchStart.current.y - (touch?.clientY ?? 0);
+            touchStart.current = { x: 0, y: 0 };
+            // Ignore vertical scrolling and interrupted gestures.
+            if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
+              if (diffX > 0) next();
               else previous();
             }
           }}
@@ -442,12 +526,17 @@ export default function Storybook({
                 {storyPage.printedNumber !== undefined && !isMobile && (
                   <span className="storybook-page-number" aria-hidden="true">{storyPage.printedNumber}</span>
                 )}
-                <StoryPageView page={storyPage} isMobile={isMobile} programTitle={program.title} />
+                <StoryPageView page={storyPage} isMobile={isMobile} />
+                <p className="storybook-end-signature" aria-hidden="true">{program.title}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {isMobile && !hasNavigated && (
+        <p className="storybook-swipe-hint">Swipe left or right to turn pages</p>
+      )}
 
       <div className="storybook-bottombar">
         <button

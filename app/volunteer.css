@@ -127,7 +127,7 @@
 .volunteer-field select:focus-visible,
 .volunteer-field textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-color: var(--secondary); }
 .volunteer-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
-.volunteer-consent { display: flex; align-items: flex-start; gap: 10px; color: var(--text-body); font-size: 0.88rem; }
+.volunteer-consent { display: flex; min-height: 44px; align-items: center; gap: 10px; color: var(--text-body); font-size: 0.88rem; }
 .volunteer-marketing { margin-top: -8px; color: var(--text-muted); font-size: 0.84rem; }
 .volunteer-consent input { width: 18px; height: 18px; flex: none; margin-top: 2px; accent-color: var(--secondary); }
 .volunteer-form .act-btn { justify-self: start; }

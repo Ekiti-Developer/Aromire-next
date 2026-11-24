@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import type { Partner } from "@/sanity/queries/partners";
+import { normalizeAlt } from "@/lib/alt-text";
 
 /**
  * Partner logos. On wide screens the first list is a static grid. On small
@@ -18,7 +19,7 @@ export default function PartnerMarquee({ partners }: { partners: Partner[] }) {
         const logo = partner.logoUrl ? (
           <Image
             src={partner.logoUrl}
-            alt={partner.logoAlt || partner.name}
+            alt={normalizeAlt(partner.logoAlt, partner.name)}
             width={180}
             height={80}
             sizes="(max-width: 600px) 45vw, 180px"

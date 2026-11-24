@@ -187,7 +187,13 @@ export function buildPages(program: StorybookProgram, options: BuildPagesOptions
   const photoToPage: Record<string, number> = {};
   const contents: StorybookContentsItem[] = [];
   let spread = 0;
-  const textless = { photo: null as { emitPlate: () => void; emitCaption: () => void } | null };
+  type PendingPage = Omit<StorybookPage, "spread" | "side" | "printedNumber">;
+  type PhotoEntry = {
+    photo: StorybookPhoto;
+    chapterNumber: number;
+    date?: string | null;
+    hasStory: boolean;
+  };
 
   const push = (page: Omit<StorybookPage, "spread" | "side" | "printedNumber"> & {
     side?: "left" | "right";
@@ -196,6 +202,68 @@ export function buildPages(program: StorybookProgram, options: BuildPagesOptions
     const side = page.side ?? (pages.length % 2 === 0 ? "left" : "right");
     const printedNumber = page.printedNumber ?? (pages.length === 0 ? undefined : pages.length + 1);
     pages.push({ ...page, spread, side, printedNumber });
+  };
+
+  const makePlate = (entry: PhotoEntry, inline: boolean): PendingPage => {
+    const { photo, chapterNumber } = entry;
+    return {
+      id: `photo-${photo._key}`,
+      kind: "photoPlate",
+      chapterNumber,
+      photoKey: photo._key,
+      isVideo: false,
+      videoUrl: photo.videoUrl ?? null,
+      image: photo.image ?? null,
+      caption: photo.caption ?? "",
+      secondaryBody: photo.storyLine ?? undefined,
+      locationLabel: photo.location?.name ?? undefined,
+      showCaptionInline: mobile || inline,
+    };
+  };
+
+  const makeCaption = (entry: PhotoEntry): PendingPage => {
+    const { photo, chapterNumber, date } = entry;
+    return {
+      id: `photo-${photo._key}-caption`,
+      kind: "photoCaption",
+      chapterNumber,
+      photoKey: photo._key,
+      skipOnMobile: true,
+      eyebrow: `Chapter ${pad(chapterNumber)}${date ? ` · ${formatDate(date)}` : ""}`,
+      title: photo.caption ?? "",
+      locationLabel: photo.location?.name ?? undefined,
+      body: photo.storyLine ?? undefined,
+      isVideo: false,
+      videoUrl: photo.videoUrl ?? null,
+      image: photo.image ?? null,
+    };
+  };
+
+  // Pair pages as they arrive. A picture with no story never gets a caption
+  // page — the next picture takes the facing page instead.
+  let buffered: PendingPage | null = null;
+  const pair = (page: PendingPage) => {
+    if (!buffered) {
+      buffered = page;
+      return;
+    }
+    spread += 1;
+    push(buffered);
+    push(page);
+    buffered = null;
+  };
+
+  const emitPhotos = (photos: StorybookPhoto[] | null | undefined, chapterNumber: number, date?: string | null) => {
+    (photos ?? [])
+      .filter((photo) => photo.mediaType !== "video")
+      .forEach((photo) => {
+        // A caption and location already sit on the plate. Only a real story
+        // line earns a facing page; otherwise the next picture does.
+        const hasStory = Boolean((photo.storyLine ?? "").trim());
+        const entry: PhotoEntry = { photo, chapterNumber, date, hasStory };
+        pair(makePlate(entry, !hasStory));
+        if (hasStory && !mobile) pair(makeCaption(entry));
+      });
   };
 
   // Spread 1: cover + intro
@@ -249,90 +317,61 @@ export function buildPages(program: StorybookProgram, options: BuildPagesOptions
       chapterNumber,
     });
 
-    (chapter.photos ?? [])
-      .filter((photo) => photo.mediaType !== "video")
-      .forEach((photo) => {
-      const locationLabel = photo.location?.name ?? undefined;
-      const isVideo = photo.mediaType === "video";
-      const image = isVideo ? photo.poster ?? null : photo.image ?? null;
-      const caption = photo.caption ?? "";
-      const hasText = Boolean(
-        caption.trim() || (photo.storyLine ?? "").trim() || (locationLabel ?? "").trim(),
-      );
-
-      const emitPlate = () => {
-        push({
-          id: `photo-${photo._key}`,
-          kind: "photoPlate",
-          chapterNumber,
-          photoKey: photo._key,
-          isVideo,
-          videoUrl: photo.videoUrl ?? null,
-          image,
-          caption,
-          secondaryBody: photo.storyLine ?? undefined,
-          locationLabel,
-          showCaptionInline: mobile,
-        });
-        photoToPage[photo._key] = pages.length - 1;
-      };
-
-      const emitCaption = () => {
-        push({
-          id: `photo-${photo._key}-caption`,
-          kind: "photoCaption",
-          chapterNumber,
-          photoKey: photo._key,
-          skipOnMobile: true,
-          eyebrow: `Chapter ${pad(chapterNumber)}${chapter.date ? ` · ${formatDate(chapter.date)}` : ""}`,
-          title: caption,
-          locationLabel,
-          body: photo.storyLine ?? undefined,
-          isVideo,
-          videoUrl: photo.videoUrl ?? null,
-          image,
-        });
-      };
-
-      if (mobile) {
-        spread += 1;
-        emitPlate();
-        return;
-      }
-
-      // With no caption, story line or location, two photos share one spread so
-      // they sit side by side instead of facing a blank caption page.
-      if (!hasText) {
-        if (textless.photo) {
-          spread += 1;
-          textless.photo.emitPlate();
-          emitPlate();
-          textless.photo = null;
-        } else {
-          textless.photo = { emitPlate, emitCaption };
-        }
-        return;
-      }
-
-      if (textless.photo) {
-        spread += 1;
-        textless.photo.emitPlate();
-        textless.photo.emitCaption();
-        textless.photo = null;
-      }
-      spread += 1;
-      emitPlate();
-      emitCaption();
-    });
+    emitPhotos(chapter.photos, chapterNumber, chapter.date);
   });
 
-  if (textless.photo) {
-    spread += 1;
-    textless.photo.emitPlate();
-    textless.photo.emitCaption();
+  if (buffered) {
+    const remaining: PendingPage = buffered;
+    if (remaining.kind === "photoCaption") {
+      // Final story has no facing picture: show it on the plate itself.
+      const plate = pages.find((page) => page.kind === "photoPlate" && page.photoKey === remaining.photoKey);
+      if (plate) plate.showCaptionInline = true;
+    } else {
+      // Final picture has no story: take the last caption slot so two pictures
+      // share a spread instead of a blank page sitting beside it.
+      let captionIndex = -1;
+      for (let index = pages.length - 1; index >= 0; index -= 1) {
+        if (pages[index].kind === "photoCaption") {
+          captionIndex = index;
+          break;
+        }
+      }
+      if (captionIndex >= 0) {
+        const caption = pages[captionIndex];
+        const plate = pages.find((page) => page.kind === "photoPlate" && page.photoKey === caption.photoKey);
+        if (plate) plate.showCaptionInline = true;
+        pages[captionIndex] = {
+          ...remaining,
+          spread: caption.spread,
+          side: caption.side,
+          printedNumber: caption.printedNumber,
+        };
+      } else {
+        // No authored story anywhere: pair the picture with the cover image.
+        spread += 1;
+        push(remaining);
+        push({
+          id: `photo-${remaining.photoKey}-companion`,
+          kind: "photoCaption",
+          chapterNumber: remaining.chapterNumber ?? 0,
+          photoKey: remaining.photoKey,
+          skipOnMobile: true,
+          eyebrow: "The story so far",
+          title: program.title,
+          body: program.hook ?? undefined,
+          image: program.cover ?? null,
+        });
+      }
+    }
+    buffered = null;
   }
 
-  // Final spread: where it leads + a video recap (or the end when no video).
+  pages.forEach((page, index) => {
+    if (page.kind === "photoPlate" && page.photoKey) photoToPage[page.photoKey] = index;
+  });
+
+  // Final spread: "Where it leads" on its own page, then "The end" as the
+  // last page carrying the single CTA and (when available) the next story.
   spread += 1;
   const testimonial = program.featuredTestimonial?.consentConfirmed
     ? {
@@ -341,9 +380,10 @@ export function buildPages(program: StorybookProgram, options: BuildPagesOptions
         quote: program.featuredTestimonial.quote || "",
       }
     : null;
-  const endingIndex = pages.length;
+  const endingIndex = pages.length + 1;
   const ctaLabel = program.storyCta?.label?.trim() || "Help us write the next one";
   const ctaHref = program.storyCta?.href?.trim() || "/volunteer";
+
   push({
     id: "ending",
     kind: "ending",
@@ -352,9 +392,6 @@ export function buildPages(program: StorybookProgram, options: BuildPagesOptions
     body: program.ending ?? "Every chapter was written with the people we met. Help us write the next one.",
     facts,
     testimonial,
-    nextStory: options.nextStory ?? null,
-    ctaLabel,
-    ctaHref,
   });
 
   push({

@@ -99,6 +99,63 @@ test("textless photos share a spread instead of facing a blank caption page", ()
   assert.equal(plates[0].spread, plates[1].spread);
 });
 
+test("a textless photo pairs with the next picture, even when that one has a story", () => {
+  const silent = { ...photo("silent"), caption: "", storyLine: "", location: { name: "" } };
+  const model = buildPages(program({ chapters: [chapter("day1", [silent, photo("told")])] }));
+  const silentPlate = model.pages.find((page) => page.photoKey === "silent");
+  const toldPlate = model.pages.find((page) => page.photoKey === "told");
+  const blankCaptions = model.pages.filter(
+    (page) => page.kind === "photoCaption" && !(page.title || "").trim(),
+  );
+
+  assert.equal(model.pages.length % 2, 0);
+  assert.equal(blankCaptions.length, 0);
+  assert.equal(silentPlate?.spread, toldPlate?.spread);
+  // No spare page for a caption, so the story is shown on the plate itself.
+  assert.equal(toldPlate?.showCaptionInline, true);
+});
+
+test("a trailing textless photo never faces a blank caption page", () => {
+  const silent = (key: string) => ({ ...photo(key), caption: "", storyLine: "", location: { name: "" } });
+  const model = buildPages(program({ chapters: [chapter("day1", [photo("told"), silent("last")])] }));
+  const blankCaptions = model.pages.filter(
+    (page) => page.kind === "photoCaption" && !(page.title || "").trim(),
+  );
+  const toldPlate = model.pages.find((page) => page.photoKey === "told" && page.kind === "photoPlate");
+  const lastPlate = model.pages.find((page) => page.photoKey === "last" && page.kind === "photoPlate");
+
+  assert.equal(model.pages.length % 2, 0);
+  assert.equal(blankCaptions.length, 0);
+  assert.equal(toldPlate?.spread, lastPlate?.spread);
+  assert.equal(toldPlate?.showCaptionInline, true);
+});
+
+test("each chapter's pictures stay in order after its own text", () => {
+  const model = buildPages(
+    program({
+      chapters: [
+        chapter("day1", [photo("a"), photo("b")]),
+        chapter("day2", [photo("c"), photo("d")]),
+      ],
+    }),
+  );
+  const indexOf = (id: string) => model.pages.findIndex((page) => page.id === id);
+
+  const markers = [
+    "chapter-1-title",
+    "chapter-1-narrative",
+    "photo-a",
+    "photo-b",
+    "chapter-2-title",
+    "chapter-2-narrative",
+    "photo-c",
+    "photo-d",
+  ].map(indexOf);
+
+  assert.equal(markers.every((value) => value >= 0), true);
+  assert.deepEqual(markers, [...markers].sort((a, b) => a - b));
+});
+
 test("the cover is unnumbered and every other page is numbered", () => {
   const model = buildPages(program({ chapters: [chapter("day1", [photo("a")])] }));
   assert.equal(model.pages[0].printedNumber, undefined);
@@ -170,6 +227,20 @@ test("testimonials are included only with consent", () => {
     }),
   );
   assert.equal(withoutConsent.pages.at(-2)?.testimonial, null);
+});
+
+test("only the final 'The end' page has the CTA and next story", () => {
+  const nextStory = { title: "Another story", slug: "another-story" };
+  const model = buildPages(program(), { nextStory });
+  const withCta = model.pages.filter((page) => page.ctaHref);
+  const withNext = model.pages.filter((page) => page.nextStory);
+
+  assert.equal(model.pages.at(-1)?.kind, "theEnd");
+  assert.equal(model.pages.at(-1)?.title, "The end");
+  assert.equal(model.pages.at(-2)?.title, "Where it leads");
+  assert.deepEqual(withCta.map((page) => page.id), ["the-end"]);
+  assert.deepEqual(withNext.map((page) => page.id), ["the-end"]);
+  assert.equal(model.pages.find((page) => page.id === "ending")?.ctaHref, undefined);
 });
 
 test("missing optional content does not break the model", () => {

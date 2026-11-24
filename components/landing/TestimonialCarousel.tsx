@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { Testimonial } from "@/sanity/queries/content";
+import { normalizeAlt } from "@/lib/alt-text";
 
 export default function TestimonialCarousel({ items }: { items: Testimonial[] }) {
   const [current, setCurrent] = useState(0);
@@ -16,7 +17,7 @@ export default function TestimonialCarousel({ items }: { items: Testimonial[] })
         <div className="landing-testimonial-author">
           {item.photo?.url && (
             <span className="landing-testimonial-logo">
-              <Image src={item.photo.url} alt={item.photo.alt || item.name} width={80} height={80} />
+              <Image src={item.photo.url} alt={normalizeAlt(item.photo.alt, item.name)} width={80} height={80} />
             </span>
           )}
           <span className="landing-testimonial-details">

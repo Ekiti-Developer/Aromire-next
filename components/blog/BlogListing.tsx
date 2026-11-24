@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { PostSummary } from "@/lib/sanity/queries";
 import { POST_CATEGORIES, type PostCategory } from "@/lib/post-categories";
+import { normalizeAlt } from "@/lib/alt-text";
 
 const CATEGORIES = POST_CATEGORIES;
 type Category = PostCategory;
@@ -37,7 +38,7 @@ function PostCard({ post }: { post: PostSummary }) {
           {post.coverImage?.url ? (
             <Image
               src={post.coverImage.url}
-              alt={post.coverImage.alt || post.title}
+              alt={normalizeAlt(post.coverImage.alt, post.title)}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 33vw"
               {...blurProps(post.coverImage)}
@@ -127,7 +128,7 @@ export default function BlogListing({
               {featured.coverImage?.url ? (
                 <Image
                   src={featured.coverImage.url}
-                  alt={featured.coverImage.alt || featured.title}
+                  alt={normalizeAlt(featured.coverImage.alt, featured.title)}
                   fill
                   priority
                   sizes="(max-width: 900px) 100vw, 60vw"

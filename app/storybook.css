@@ -1,7 +1,7 @@
 /* ============================================================
    PROGRAMS · STORY PAGES + STORYBOOK VIEWER
-   Loaded after globals.css. Scoped classes; the book always keeps
-   its cream paper even in dark mode.
+   Loaded after globals.css. Scoped classes; the book keeps its cream
+   paper on the deep-plum stage. The site is pinned to light.
    ============================================================ */
 
 :root {
@@ -226,16 +226,14 @@
 }
 .story-cover-media img { object-fit: cover; }
 
-.story-cover-pill {
-  display: inline-block;
+.story-cover-date {
   margin: 0 0 4px;
-  padding: 7px 15px;
-  border: 1px solid var(--provenance);
-  border-radius: 999px;
-  background: var(--tint);
   color: var(--provenance-deep);
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-sans, Inter, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .story-cover h1 {
@@ -552,7 +550,7 @@
   overflow: hidden;
   width: 100%;
   min-height: 190px;
-  border-radius: 10px;
+  border-radius: var(--radius-book);
   background: var(--story-olive);
 }
 .story-testimonial-photo img,
@@ -560,6 +558,17 @@
 .video-poster-frame iframe,
 .video-poster-frame video { object-fit: cover; }
 .video-poster { padding: 0; border: 0; cursor: pointer; }
+/* Video tiles occupy the same grid cell as a photo tile. */
+.video-poster-tile {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 8px;
+}
+.video-poster-tile iframe,
+.video-poster-tile video { width: 100%; height: 100%; }
 .video-poster-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: #ffffff; font-size: 2rem; }
 .video-poster-play {
   position: absolute;
@@ -587,7 +596,7 @@
 .story-cta-band {
   margin-top: 64px;
   padding: 48px 5%;
-  border-radius: 16px;
+  border-radius: var(--radius-raised);
   background: var(--provenance);
   color: var(--story-ink);
   text-align: center;
@@ -682,7 +691,23 @@
 }
 .storybook-topbtn:hover { background: rgba(255, 255, 255, 0.12); }
 .storybook-topbar-spacer { flex: none; width: 44px; }
-.storybook-close { flex: none; width: 44px; font-size: 1.7rem; line-height: 1; }
+.storybook-close {
+  flex: none;
+  width: 44px;
+  padding: 0;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background-color var(--duration-base) var(--ease-out),
+              border-color var(--duration-base) var(--ease-out),
+              transform var(--duration-base) var(--ease-out);
+}
+.storybook-close:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.06);
+}
+.storybook-close:active { transform: scale(0.96); }
+.storybook-close svg { display: block; }
 
 .storybook-book-wrap {
   display: grid;
@@ -695,6 +720,7 @@
 .storybook-book {
   position: relative;
   width: min(1120px, 100%);
+  touch-action: pan-y;
 }
 .storybook-book::before,
 .storybook-book::after {
@@ -711,10 +737,12 @@
 
 .storybook-pages {
   display: grid;
+  /* One shared vanishing point makes the two pages turn as a book. */
+  perspective: 1600px;
   height: min(700px, calc(100dvh - 170px));
   grid-template-columns: repeat(2, minmax(0, 1fr));
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--radius-book);
   background: var(--story-paper);
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
 }
@@ -729,6 +757,7 @@
   min-width: 0;
   overflow-y: auto;
   padding: clamp(24px, 3.4vw, 48px);
+  padding-bottom: 72px;
   background: var(--story-paper);
   color: var(--story-ink);
   font-family: var(--story-reading);
@@ -801,7 +830,7 @@
   position: absolute;
   inset: 12px;
   border: 1.5px solid var(--provenance);
-  border-radius: 3px;
+  border-radius: var(--radius-fine);
   content: "";
   pointer-events: none;
 }
@@ -901,7 +930,29 @@
 }
 .storybook-next { margin-top: 26px; font-size: 0.9rem; }
 .storybook-next a { color: var(--accent-text); }
-.storybook-end-signature { margin-top: 30px; color: var(--text-muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.storybook-end-signature {
+  position: absolute;
+  right: 0;
+  bottom: 38px;
+  left: 0;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.storybook-swipe-hint {
+  flex: none;
+  margin: 0;
+  padding: 6px 12px 0;
+  color: var(--provenance-light, #ffffff);
+  font-family: var(--font-sans, Inter, sans-serif);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
 
 .storybook-bottombar {
   display: flex;
@@ -997,6 +1048,82 @@
   .storybook-topbtn { padding: 0 12px; }
 }
 
+/* ---------- fullscreen photo viewer ---------- */
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vw, 48px);
+  background: rgba(10, 8, 25, 0.94);
+  cursor: zoom-out;
+}
+.photo-lightbox-figure {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  max-width: min(100%, 1400px);
+  max-height: 100%;
+  cursor: default;
+}
+.photo-lightbox-figure img {
+  max-width: 100%;
+  max-height: calc(100dvh - 140px);
+  object-fit: contain;
+  border-radius: var(--radius-book);
+}
+.photo-lightbox-figure figcaption { color: var(--ochre-light); font-size: 0.9rem; text-align: center; }
+.photo-lightbox-count { color: var(--provenance-light); font-variant-numeric: tabular-nums; }
+.photo-lightbox-video {
+  width: min(92vw, 1200px);
+  max-height: calc(100dvh - 160px);
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-book);
+  background: #000000;
+  object-fit: contain;
+}
+.photo-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.photo-lightbox-nav:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.16);
+}
+.photo-lightbox-nav.prev { left: clamp(12px, 3vw, 28px); }
+.photo-lightbox-nav.next { right: clamp(12px, 3vw, 28px); }
+.photo-lightbox-close {
+  position: absolute;
+  top: clamp(12px, 3vw, 28px);
+  right: clamp(12px, 3vw, 28px);
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  cursor: pointer;
+}
+.photo-lightbox-close:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.16);
+}
+
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .story-scroll-cue { animation: none !important; }
@@ -1006,8 +1133,11 @@
   .story-photo-tile img,
   .story-open-button,
   .btn-gold,
-  .story-chapter-bar-track span { transition: none !important; }
+  .story-chapter-bar-track span,
+  .storybook-close { transition: none !important; }
   .program-story-card:hover,
   .story-open-button:hover,
-  .btn-gold:hover { transform: none !important; }
+  .btn-gold:hover,
+  .storybook-close:hover,
+  .storybook-close:active { transform: none !important; }
 }

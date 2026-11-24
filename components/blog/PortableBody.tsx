@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { ComponentProps } from "react";
 
 import type { PortableTextBlock, SanityImage } from "@/lib/sanity/queries";
+import { normalizeAlt } from "@/lib/alt-text";
 import YouTubeEmbed from "./YouTubeEmbed";
 
 const components: PortableTextComponents = {
@@ -14,7 +15,7 @@ const components: PortableTextComponents = {
         <figure className="blog-prose-figure">
           <Image
             src={image.url}
-            alt={image.alt || ""}
+            alt={normalizeAlt(image.alt)}
             width={image.width || 1200}
             height={image.height || 800}
             sizes="(max-width: 800px) 100vw, 760px"
